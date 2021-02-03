@@ -17,7 +17,7 @@ struct KrylovBasis{T,S,G<:UniformGrid{S,1}} <: WaveMatrix{T,S,G}
   Grid spacing, requirement for WaveObject implementation and to compute inner
   products.
   """
-  Δ::T;
+  Δ::Number;
 end
 """
     KrylovBasis{T}(grid::UniformGrid, size::Int)
@@ -62,8 +62,8 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   Φ = KrylovBasis{eltype(ψ)}(grid, size);
 
   # Hamiltonian representation matrix elements.
-  α = zeros(eltype(ψ), size);    # <ϕ[i]|H|ϕ[i]>
-  β = zeros(eltype(ψ), size-1);  # <ϕ[i]|H|ϕ[i-1]>
+  α = zeros(Complex{Float64}, size);    # <ϕ[i]|H|ϕ[i]>
+  β = zeros(Complex{Float64}, size-1);  # <ϕ[i]|H|ϕ[i-1]>
 
   # Vector for storing explicitly calculated β for comparison with the implicit
   # calculation method.
@@ -82,7 +82,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   for i ∈ 1:size
     # Apply Hamiltonian to previous basis element.
     # ψ = H|ϕ[i]>
-    ψ[:] = H * Φ[:,i];
+    ψ[:] = ustrip(H * Φ[:,i])*unit(ψ[1]);
 
     # α[i] = <ϕ[i]|H|ϕ[i]>
     α[i] = ip(Φ, i, ψ);
@@ -245,10 +245,11 @@ function propagate(sim::Lanczos,
   ψv = Vector{Complex{Float64}}(undef, size(Φ)[2])
   ψvt = Vector{Complex{Float64}}(undef, size(Φ)[2])
   ψvtp = Vector{Complex{Float64}}(undef, size(Φ)[2])
+  ψvall = Array{Complex{Float64}, 2}(undef, sim.basissteps, size(Φ)[2])
 
   ψv[:] = convert_to_krylov(ψ, Φ);
 
-  Δt = zeros(sim.basissteps+1);
+  Δt = zeros(typeof(par.Δt), sim.basissteps+1);
   if (startΔt != 0) Δt[1] = startΔt;
   else Δt[1] = par.Δt; end
 
@@ -265,7 +266,7 @@ function propagate(sim::Lanczos,
       fill!(ψvt, 0.0);
       eval[i] += 1;
       for j ∈ 1:sim.basisno
-        ψvt[:] += Φ.v[:,j] * exp(-im * Δt[i] * Φ.λ[j]) * Φ.v[:,j]' * ψv;
+        ψvt[:] += Φ.v[:,j] * exp(ustrip(-im * Δt[i] * Φ.λ[j])) * Φ.v[:,j]' * ψv;
 
         # Check if result has converged.
         if (j == 1 || sum(abs2.(ψvt - ψvtp)) > conv.ϵ)
@@ -311,6 +312,9 @@ function propagate(sim::Lanczos,
     # Normalise wavefunction to reduce fluctuations due to additional basis
     # vectors used.
     ψv ./= LinearAlgebra.norm(ψv);
+
+    # Record historical propagation data.
+    ψvall[i,:] = ψv;
 
     # Stop propagation if adapting time step and limit was reached.
     if (adptΔt !== nothing && stopprop)
