@@ -3,7 +3,7 @@
 # Plotting functions.
 #
 using RecipesBase;
-using Plots: @layout;
+using Plots: @layout, grid;
 #using IJulia; # Required to prevent plotting window opening and crashing.
 
 export check_path, gen_filename, LanczosPlotOptions, SplitStepPlotOptions, SimPlot;
