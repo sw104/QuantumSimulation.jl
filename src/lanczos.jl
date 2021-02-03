@@ -68,7 +68,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   # Vector for storing explicitly calculated β for comparison with the implicit
   # calculation method.
   if (!calcβ && debug)
-    β2 = zeros(eltype(ψ), size-1); # <ϕ[i-1]|H|ϕ[i]> 
+    β2 = zeros(Complex{Float64}, size-1); # <ϕ[i-1]|H|ϕ[i]> 
   end
 
   # Normalise initial wave function if not already normalised.
@@ -82,7 +82,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   for i ∈ 1:size
     # Apply Hamiltonian to previous basis element.
     # ψ = H|ϕ[i]>
-    ψ[:] = ustrip(H * Φ[:,i])*unit(ψ[1]);
+    ψ[:] = ustrip.(H * Φ[:,i])*unit(ψ[1]);
 
     # α[i] = <ϕ[i]|H|ϕ[i]>
     α[i] = ip(Φ, i, ψ);
@@ -91,7 +91,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
     if (i != 1 && calcβ)
       β[i-1] = ip(Φ, i-1, ψ);
     elseif (i != 1 && !calcβ && debug)
-      β2[i-1] = ip(ϕ, i-1, ψ);
+      β2[i-1] = ip(Φ, i-1, ψ);
     end
 
     # Stop after coefficient calculation for final run.

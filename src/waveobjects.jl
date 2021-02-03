@@ -87,7 +87,7 @@ function WaveFunction{T}(grid::G, ψ::AbstractArray{K,N}) where {T,K,N,S,G<:Grid
 end
 function WaveFunction{T}(grid::G, ψ::AbstractArray{K,N}) where {A,B,U,T<:Unitful.Quantity{A,B,U},K,N,S,G<:Grid{S,N}}
   check_same_size(grid, ψ);
-  WaveFunction{T,N,S,G}(ustrip(ψ)*unit(T), grid.Δ);
+  WaveFunction{T,N,S,G}(ustrip.(ψ)*unit(T), grid.Δ);
 end
 """
     WaveFunction(grid::G, ψ::AbstractArray{T,N}) where {T,N,S,G<:Grid{S,N}}
@@ -227,7 +227,7 @@ function transform(ψ::WaveFunction{T,N,S}, g::Grid{M,R,Q}) where
      R,A,D,U,Q<:Unitful.Quantity{A,D,U}}
     # Determine quantity of transformed WaveFunction.
     newquant = typeof((1.0+1.0im)*unit(Q)^(-1/2));
-    return WaveFunction{newquant}(g, FFTW.fft(ustrip(ψ)));
+    return WaveFunction{newquant}(g, FFTW.fft(ustrip.(ψ)));
 end
 function transform(ψ::WaveFunction{T,N,S}, g::Grid{S}) where
             {T,N,S<:ConfigurationSpace}
@@ -247,7 +247,7 @@ function transform(ψ::WaveFunction{T,N,S}, g::Grid{C,R,Q}) where
      R,A,D,U,Q<:Unitful.Quantity{A,D,U}}
     # Determine quantity of transformed WaveFunction.
     newquant = typeof((1.0+1.0im)*unit(Q)^(-1/2));
-    return WaveFunction{newquant}(g, FFTW.ifft(ustrip(ψ)));
+    return WaveFunction{newquant}(g, FFTW.ifft(ustrip.(ψ)));
 end
 """
     FFTW.fft(ψ::WaveFunction{Complex{Float64}})

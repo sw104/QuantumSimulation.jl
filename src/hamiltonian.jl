@@ -99,7 +99,7 @@ function SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{ConfigurationSpace,T1},
 
   SeparableHamiltonian{T,TM,M,ConfigurationSpace}(-0.5ustrip.(sec_dv(xgrid))/ustrip(m)*unit(T),
                                                 zeros(T,length(xgrid)),
-                                                0.5ustrip(kgrid).^2*unit(T));
+                                                0.5ustrip.(kgrid).^2*unit(T));
 end
 
 "Convenience constructor for setting default matrix types."

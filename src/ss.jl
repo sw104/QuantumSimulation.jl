@@ -18,7 +18,7 @@ function gen_opr(H::SeparableHamiltonian, par::SimParams)
   else fac = 1;
   end
 
-  return (exp.(ustrip(-im*H.T*par.Δt*fac)), exp.(ustrip(-0.5im*H.V*par.Δt*fac)));
+  return (exp.(ustrip.(-im*H.T*par.Δt*fac)), exp.(ustrip.(-0.5im*H.V*par.Δt*fac)));
 end
 
 """
@@ -55,7 +55,7 @@ function propagate(sim::SplitStep,
   (opT, opV) = gen_opr(H, par);
 
   # Work on a copy of the wave function passed with all units stripped.
-  #ψ = WaveFunction{Complex{Float64},1,C,G}(ustrip(ψi), ustrip(ψi.Δ));
+  #ψ = WaveFunction{Complex{Float64},1,C,G}(ustrip.(ψi), ustrip(ψi.Δ));
 
   # Half-step in real space.
   ψ .*= opV;
@@ -101,14 +101,14 @@ Determine the lowest energy eigenstate of the given potential.
 function find_groundstate(sim::SplitStep,
                          xgrid::G,
                          kgrid::UniformGrid{M,1},
-                         H::SeparableHamiltonian{K,B,C},
+                         H::SeparableHamiltonian{K,BT,B,C},
                          ψi::WaveFunction{T,1,C,G}=WaveFunction(xgrid, exp.(-xgrid.^2/2)),
                          par::SimParams=SimParams(0.1im, 250, 1e-8);
                          debug::Bool = false,
                          debugpath::String = "simrevamp/dev",
                          debugpltopts::SplitStepPlotOptions=SplitStepPlotOptions(true, 0.1),
                          printstats::Bool = true) where
-        {T,K,B,C<:ConfigurationSpace,M<:MomentumSpace,G<:UniformGrid{C,1}}
+        {T,K,BT,B,C<:ConfigurationSpace,M<:MomentumSpace,G<:UniformGrid{C,1}}
 
   if real(par.Δt) > 0*unit(par.Δt)
     throw(DomainError(par.Δt, "time step must be imaginary."));
