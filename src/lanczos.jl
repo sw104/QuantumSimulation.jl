@@ -75,7 +75,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   nm = norm(ψ);
   if (abs(1 - nm) > 1e-6)
     Φ[:,1] = ψ ./ nm;
-    if (debug) println("Normalisation of initial ψ was required."); end
+    if (debug) println("Normalisation of initial ψ was required, was ", nm, "."); end;
   else Φ[:,1] = ψ; end
 
   # Generate the basis vectors and Hamiltonian representation.
@@ -146,6 +146,13 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
 
   # Calculate respective eigenvectors.
   Φ.v[:,:] = LinearAlgebra.eigvecs(Hn, Φ.λ);
+
+  # Print information about the norm of the eigenvectors.
+  if (debug)
+    for i ∈ 1:size
+      println("Norm of eigenvector ", i, " is", LinearAlgebra.norm(Φ.v[i,:]));
+    end
+  end
 
   return Φ;
 end
