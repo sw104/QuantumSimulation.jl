@@ -7,13 +7,14 @@ import Unitful: 𝐌, 𝐋;
 export Hamiltonian, SeparableHamiltonian, set_min_zero;
 
 "Abstract type of Hamiltonian matricies."
-abstract type Hamiltonian{T<:Number,M<:AbstractMatrix{T}, S<:Space} <: AbstractMatrix{T} end;
+abstract type Hamiltonian{T<:Number,TM<:Number,M<:AbstractMatrix{TM}, S<:Space} <:
+              AbstractMatrix{TM} end;
 Base.size(H::Hamiltonian) = size(H.H);
 Base.getindex(H::Hamiltonian, I::Int,J::Int) = H.H[I,J];
 Base.setindex!(H::Hamiltonian, v, I::Int, J::Int) = (H.H[I,J] = v);
 
 "Hamiltonian which can be separated into kinetic and potential parts."
-struct SeparableHamiltonian{T,M,S} <: Hamiltonian{T,M,S}
+struct SeparableHamiltonian{T,TM,M,S} <: Hamiltonian{T,TM,M,S}
   "Hamiltonian in the space `S`."
   H::M;
 
@@ -24,13 +25,13 @@ struct SeparableHamiltonian{T,M,S} <: Hamiltonian{T,M,S}
   T::Vector{T};
 
   """
-      SeparableHamiltonian{T,M,S}(H::M, V::AbstractVector,
-                                  K::AbstractVector) where {T,M,S}
+      SeparableHamiltonian{T,TM,M,S}(H::M, V::AbstractVector,
+                                    K::AbstractVector) where {T,TM,M,S}
 
   Re-implement default constructor with some error checking.
   """
-  function SeparableHamiltonian{T,M,S}(H::AbstractMatrix, V::AbstractVector,
-                                       K::AbstractVector) where {T,M,S}
+  function SeparableHamiltonian{T,TM,M,S}(H::AbstractMatrix, V::AbstractVector,
+                                          K::AbstractVector) where {T,TM,M,S}
     LinearAlgebra.checksquare(H);
     check_same_size(V, K);
     if size(H)[1] != length(V)
@@ -39,6 +40,7 @@ struct SeparableHamiltonian{T,M,S} <: Hamiltonian{T,M,S}
     new(H, V, K);
   end
 end
+
 """
     SeparableHamiltonian{T}(g::Grid1D{S}) where {S,T}
 
@@ -47,7 +49,7 @@ appropriate Hamiltonian size.
 """
 function SeparableHamiltonian{T}(g::Grid1D{S}) where {T<:Number,S}
   len = length(g);
-  SeparableHamiltonian{T,Matrix{T},S}(zeros(T, len, len),
+  SeparableHamiltonian{T,T,Matrix{T},S}(zeros(T, len, len),
                                       zeros(T, len), zeros(T, len));
 end
 SeparableHamiltonian(g::Grid1D) = SeparableHamiltonian{Complex{Float64}}(g);
@@ -61,25 +63,25 @@ function SeparableHamiltonian(g::Grid1D{S}, H::AbstractMatrix{T}) where {S,T}
   LinearAlgebra.checksquare(H);
   check_same_size(g, H);
   len = length(g);
-  SeparableHamiltonian{T,typeof(H),S}(H, zeros(T,len), zeros(T,len));
+  SeparableHamiltonian{T,T,typeof(H),S}(H, zeros(T,len), zeros(T,len));
 end
 
 """
-    SeparableHamiltonian{T,M}(xgrid::Grid1D{ConfigurationSpace},
-                              kgrid::Grid1D{MomentumSpace}) where M<:AbstractMatrix{T}
+    SeparableHamiltonian{T,,TM,M}(xgrid::Grid1D{ConfigurationSpace},
+                        kgrid::Grid1D{MomentumSpace}) where M<:AbstractMatrix{T}
 
 Construct Hamiltonian in configuration space with 'standard' KE component.
 
 This assumes the mass of the particle and ħ are both 1.
 """
-function SeparableHamiltonian{T,M}(xgrid::Grid1D{C}, kgrid::Grid1D{S}) where
-    {T,M,C<:ConfigurationSpace,S<:MomentumSpace}
+function SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{C}, kgrid::Grid1D{S}) where
+  {T,TM,M<:Matrix{TM},C<:ConfigurationSpace,S<:MomentumSpace}
   check_same_size(xgrid, kgrid);
-  SeparableHamiltonian{T,M,C}(-0.5sec_dv(xgrid), zeros(T,length(xgrid)), 0.5kgrid.^2);
+  SeparableHamiltonian{T,TM,M,C}(-0.5sec_dv(xgrid), zeros(T,length(xgrid)), 0.5kgrid.^2);
 end
 
 """
-    function SeparableHamiltonian{T}(xgrid::Grid1D{ConfigurationSpace,T1},
+    function SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{ConfigurationSpace,T1},
                                      kgrid::Grid1D{MomentumSpace,T2},
                                      mass::Number = 1) where
         {T,T1<:Unitful.Quantity,T2<:Unitful.Quantity}
@@ -89,12 +91,13 @@ the 'standard' KE component.
 
 This assumes ħ = 1.
 """
-function SeparableHamiltonian{T,M}(xgrid::Grid1D{ConfigurationSpace,T1},
+function SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{ConfigurationSpace,T1},
                                  kgrid::Grid1D{MomentumSpace,T2}, m::Number=1) where
-  {N<:Number,T<:Unitful.Quantity{N,Unitful.𝐌*Unitful.𝐋^2/Unitful.𝐓^2},M,T1<:Unitful.Quantity,T2<:Unitful.Quantity}
+  {N<:Number,T<:Unitful.Quantity{N,Unitful.𝐌*Unitful.𝐋^2/Unitful.𝐓^2},TM<:Number,M<:Matrix{TM},
+   T1<:Unitful.Quantity,T2<:Unitful.Quantity}
   check_same_size(xgrid, kgrid);
 
-  SeparableHamiltonian{T,M,ConfigurationSpace}(-0.5ustrip(sec_dv(xgrid))/ustrip(m)*unit(T),
+  SeparableHamiltonian{T,TM,M,ConfigurationSpace}(-0.5ustrip.(sec_dv(xgrid))/ustrip(m)*unit(T),
                                                 zeros(T,length(xgrid)),
                                                 0.5ustrip(kgrid).^2*unit(T));
 end
@@ -102,16 +105,22 @@ end
 "Convenience constructor for setting default matrix types."
 SeparableHamiltonian{T}(xgrid::Grid1D{ConfigurationSpace},
                         kgrid::Grid1D{MomentumSpace}) where T =
-  SeparableHamiltonian{T,Matrix{T}}(xgrid, kgrid);
+  SeparableHamiltonian{T,T,Matrix{T}}(xgrid, kgrid);
+SeparableHamiltonian{T,TM}(xgrid::Grid1D{ConfigurationSpace},
+                           kgrid::Grid1D{MomentumSpace}) where {T,TM} =
+  SeparableHamiltonian{T,TM,Matrix{TM}}(xgrid, kgrid);
 SeparableHamiltonian{T}(xgrid::Grid1D{ConfigurationSpace},
                         kgrid::Grid1D{MomentumSpace},m::Number) where T =
-  SeparableHamiltonian{T,Matrix{T}}(xgrid, kgrid, m);
+  SeparableHamiltonian{T,T,Matrix{T}}(xgrid, kgrid, m);
+SeparableHamiltonian{T,TM}(xgrid::Grid1D{ConfigurationSpace},
+                           kgrid::Grid1D{MomentumSpace},m::Number) where {T,TM} =
+  SeparableHamiltonian{T,TM,Matrix{TM}}(xgrid, kgrid, m);
 SeparableHamiltonian(xgrid::Grid1D{ConfigurationSpace},
                      kgrid::Grid1D{MomentumSpace}) =
-  SeparableHamiltonian{Complex{Float64},Matrix{Complex{Float64}}}(xgrid, kgrid);
+  SeparableHamiltonian{Complex{Float64},Complex{Float64},Matrix{Complex{Float64}}}(xgrid, kgrid);
 
 """
-    SeparableHamiltonian{T,M}(xgrid::Grid1D{ConfigurationSpace},
+    SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{ConfigurationSpace},
                             kgrid::Grid1D{MomentumSpace},
                             V::AbstractVector)
 
@@ -120,43 +129,46 @@ a potential given by `V`.
 
 This assumes the mass of the particle and ħ are 1.
 """
-function SeparableHamiltonian{T,M}(xgrid::Grid1D{C}, kgrid::Grid1D{S},
+function SeparableHamiltonian{T,TM,M}(xgrid::Grid1D{C}, kgrid::Grid1D{S},
                                    V::AbstractVector) where
-      {T,M,C<:ConfigurationSpace,S<:MomentumSpace}
+    {T,TM,M<:Matrix{TM},C<:ConfigurationSpace,S<:MomentumSpace}
   check_same_size(xgrid, kgrid);
   check_same_size(xgrid, V);
 
-  SeparableHamiltonian{T,M,C}(-0.5sec_dv(xgrid) + LinearAlgebra.Diagonal(V),
+  SeparableHamiltonian{T,TM,M,C}(-0.5sec_dv(xgrid) + LinearAlgebra.Diagonal(V),
                               V, 0.5kgrid.^2);
 end
 
 SeparableHamiltonian{T}(xgrid::Grid1D{ConfigurationSpace},
-                     kgrid::Grid1D{MomentumSpace}, V::AbstractVector) where T =
-  SeparableHamiltonian{T,Matrix{T}}(xgrid, kgrid, V);
+                        kgrid::Grid1D{MomentumSpace}, V::AbstractVector) where T =
+  SeparableHamiltonian{T,T,Matrix{T}}(xgrid, kgrid, V);
+SeparableHamiltonian{T,TM}(xgrid::Grid1D{ConfigurationSpace},
+                           kgrid::Grid1D{MomentumSpace}, V::AbstractVector) where {T,TM} =
+  SeparableHamiltonian{T,TM,Matrix{TM}}(xgrid, kgrid, V);
 SeparableHamiltonian(xgrid::Grid1D{ConfigurationSpace},
                      kgrid::Grid1D{MomentumSpace}, V::AbstractVector{T}) where T =
-  SeparableHamiltonian{T,Matrix{T}}(xgrid, kgrid, V);
+  SeparableHamiltonian{T,T,Matrix{T}}(xgrid, kgrid, V);
   
 """
-    SeparableHamiltonian{T,M}(g::Grid1D{ConfigurationSpace}, V::AbstractVector)
+    SeparableHamiltonian{T,TM,M}(g::Grid1D{ConfigurationSpace}, V::AbstractVector)
 
 Construct Hamiltonian in configuration space with the potential passed by `V`.
 """
-function SeparableHamiltonian{T,M}(g::Grid1D{S}, V::AbstractVector) where
-      {T,M,S<:ConfigurationSpace}
+function SeparableHamiltonian{T,TM,M}(g::Grid1D{S}, V::AbstractVector) where
+      {T,TM,M<:Matrix{TM},S<:ConfigurationSpace}
   check_same_size(g, V);
-  SeparableHamiltonian{T,M,S}(LinearAlgebra.Diagonal(V), V, zeros(T,length(g)));
+  SeparableHamiltonian{T,TM,M,S}(LinearAlgebra.Diagonal(V), V, zeros(T,length(g)));
 end
 
 """
-    SeparableHamiltonian{T,M}(g::Grid1D{MomentumSpace}, K::AbstractVector)
+    SeparableHamiltonian{T,TM,M}(g::Grid1D{MomentumSpace}, K::AbstractVector)
 
 Construct Hamiltonian in momentum space with the kinetic component passed by `K`.
 """
-function SeparableHamiltonian{T,M}(g::Grid1D{S}, K::AbstractVector) where
-      {T,M,S<:MomentumSpace}
+function SeparableHamiltonian{T,TM,M}(g::Grid1D{S}, K::AbstractVector) where
+      {T,TM,M<:Matrix{TM},S<:MomentumSpace}
   check_same_size(g, K);
-  SeparableHamiltonian{T,M,S}(LinearAlgebra.Diagonal(K), zeros(T,length(grid)), K);
+  SeparableHamiltonian{T,TM,M,S}(LinearAlgebra.Diagonal(K), zeros(T,length(grid)), K);
 end
 
 """
@@ -166,9 +178,11 @@ Construct Hamiltonian, with elements of type `T`, in the space `S` with
 the momentum/potential component passed by `V` (depending on the space).
 """
 SeparableHamiltonian(g::Grid1D, V::AbstractVector{T}) where T =
-  SeparableHamiltonian{T,Matrix{T}}(g, V);
+  SeparableHamiltonian{T,T,Matrix{T}}(g, V);
 SeparableHamiltonian{T}(g::Grid1D, V::AbstractVector) where T =
-  SeparableHamiltonian{T,Matrix{T}}(g, V);
+  SeparableHamiltonian{T,T,Matrix{T}}(g, V);
+SeparableHamiltonian{T,TM}(g::Grid1D, V::AbstractVector) where {T,TM} =
+  SeparableHamiltonian{T,TM,Matrix{TM}}(g, V);
 
 """
     Base.:+(H₁::SeparableHamiltonian, H₂::SeparableHamiltonian)
@@ -176,18 +190,18 @@ SeparableHamiltonian{T}(g::Grid1D, V::AbstractVector) where T =
 Adding two `SeparableHamiltonian` objects of the same type returns a new
 `SeparableHamiltonian`.
 """
-Base.:+(H₁::SeparableHamiltonian{S,T,M},
-        H₂::SeparableHamiltonian{S,T,M}) where {S,T,M} =
-  SeparableHamiltonian{S,T,M}(H₁.H + H₂.H, H₁.V + H₂.V, H₁.T + H₂.T);
+Base.:+(H₁::SeparableHamiltonian{S,T,TM,M},
+        H₂::SeparableHamiltonian{S,T,TM,M}) where {S,T,TM,M} =
+  SeparableHamiltonian{S,T,TM,M}(H₁.H + H₂.H, H₁.V + H₂.V, H₁.T + H₂.T);
 """
     Base.:-(H₁::SeparableHamiltonian, H₂::SeparableHamiltonian)
 
 Subtracting two `SeparableHamiltonian` objects of the same type returns a new
 `SeparableHamiltonian`.
 """
-Base.:-(H₁::SeparableHamiltonian{S,T,M},
-        H₂::SeparableHamiltonian{S,T,M}) where {S,T,M} =
-  SeparableHamiltonian{S,T,M}(H₁.H - H₂.H, H₁.V - H₂.V, H₁.T - H₂.T);
+Base.:-(H₁::SeparableHamiltonian{S,T,TM,M},
+        H₂::SeparableHamiltonian{S,T,TM,M}) where {S,T,TM,M} =
+  SeparableHamiltonian{S,T,TM,M}(H₁.H - H₂.H, H₁.V - H₂.V, H₁.T - H₂.T);
 
 """
     Base.:*(H::SeparableHamiltonian, m::Real)
@@ -195,8 +209,8 @@ Base.:-(H₁::SeparableHamiltonian{S,T,M},
 Multiplying a `SeparableHamiltonian` object by a real scalar returns a
 `SeparableHamiltonian` object.
 """
-Base.:*(H::SeparableHamiltonian{S,T,M}, m::Real) where {S,T,M} =
-  SeparableHamiltonian{S,T,M}(H.H * m, H.V * m, H.T * m);
+Base.:*(H::SeparableHamiltonian{S,T,TM,M}, m::Real) where {S,T,TM,M} =
+  SeparableHamiltonian{S,T,TM,M}(H.H * m, H.V * m, H.T * m);
 Base.:*(m::Real, H::SeparableHamiltonian) = Base.:*(H, m);
 
 """
@@ -205,8 +219,8 @@ Base.:*(m::Real, H::SeparableHamiltonian) = Base.:*(H, m);
 Dividing a `SeparableHamiltonian` object by a real scalar returns a
 `SeparableHamiltonian` object.
 """
-Base.:/(H::SeparableHamiltonian{S,T,M}, m::Real) where {S,T,M} =
-  SeparableHamiltonian{S,T,M}(H.H / m, H.V / m, H.T / m);
+Base.:/(H::SeparableHamiltonian{S,T,TM,M}, m::Real) where {S,T,TM,M} =
+  SeparableHamiltonian{S,T,TM,M}(H.H / m, H.V / m, H.T / m);
 Base.:/(m::Real, H::SeparableHamiltonian) = Base.:/(H, m);
 
 """
