@@ -426,6 +426,7 @@ end
     @series begin
       subplot := 2;
       title := "Re(ψ)";
+      ylims := (-1,1);
       realψ = real.(ψ);
       (min, max) = get_effective_minmax(realψ, opts.extremaϵ);
       (g[min:max], realψ[min:max])
@@ -433,6 +434,7 @@ end
     @series begin
       subplot := 3;
       title := "Im(ψ)";
+      ylims := (-1,1);
       imagψ = imag.(ψ);
       (min, max) = get_effective_minmax(imagψ, opts.extremaϵ);
       (g[min:max], imagψ[min:max])
