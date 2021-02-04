@@ -12,9 +12,27 @@ acting on position space.
 """
 function sec_dv(grid::UniformGrid{S,1}) where S
   rows = length(grid);
+  # Second order method.
   return LinearAlgebra.SymTridiagonal(repeat([-2.0/grid.Δ^2], rows),
                         repeat([1.0/grid.Δ^2], rows-1));
-  #= Infinite order expression for 2nd derivative as per
+
+  # Second order method explicitly constructed.
+  #=M = zeros(Float64, rows, rows);
+  for i ∈ 1:rows
+    if i > 1 && i <= rows-1
+      M[i,i-1] = -1;
+    #end
+    M[i,i] = 2;
+    #if i <= rows-1
+      M[i,i+1] = -1;
+    end
+  end
+  #M *= -Rational(1/grid.Δ^2);
+  M *= -(1/grid.Δ^2);
+  return M;=#
+
+  #=
+  # Infinite order expression for 2nd derivative as per
   #J. Chem. Phys. 96, 1982 (1992) Daniel T. Colbert and William H. Miller 
   # https://aip-scitation-org.ezphost.dur.ac.uk/doi/10.1063/1.462100
   M = Matrix{Float64}(undef, rows, rows);
@@ -27,7 +45,27 @@ function sec_dv(grid::UniformGrid{S,1}) where S
       end
     end
   end
-  M *= -1/grid.Δx^2;
+  M *= -1/grid.Δ^2;
+  return M;=#
+  
+  #=
+  # 5 point function
+  #M = Matrix{Rational}(zero(Rational), rows, rows);
+  #M = zeros(big(Rational), rows, rows);
+  M = zeros(Float64, rows, rows);
+  for i ∈ 1:rows
+    if i > 1
+      M[i,i-1] = -4//3;
+      if (i > 2) M[i,i-2] = 1//12; end
+    end
+    M[i,i] = 5//2;
+    if i <= rows-1
+      M[i,i+1] = -4//3;
+      if (i <= rows-2) M[i,i+2] = 1//12; end
+    end
+  end
+  #M *= -Rational(1/grid.Δ^2);
+  M *= -(1/grid.Δ^2);
   return M;=#
 end
 
