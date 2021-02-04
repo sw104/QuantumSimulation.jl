@@ -228,7 +228,7 @@ function transform(ψ::WaveFunction{T,N,S}, g::Grid{M,R,Q}) where
      R,A,D,U,Q<:Unitful.Quantity{A,D,U}}
     # Determine quantity of transformed WaveFunction.
     newquant = typeof((1.0+1.0im)*unit(Q)^(-1/2));
-    return WaveFunction{newquant}(g, FFTW.fft(ustrip.(ψ)));
+    return WaveFunction{newquant}(g, FFTW.fft(ψ));
 end
 function transform(ψ::WaveFunction{T,N,S}, g::Grid{S}) where
             {T,N,S<:ConfigurationSpace}
@@ -248,7 +248,7 @@ function transform(ψ::WaveFunction{T,N,S}, g::Grid{C,R,Q}) where
      R,A,D,U,Q<:Unitful.Quantity{A,D,U}}
     # Determine quantity of transformed WaveFunction.
     newquant = typeof((1.0+1.0im)*unit(Q)^(-1/2));
-    return WaveFunction{newquant}(g, FFTW.ifft(ustrip.(ψ)));
+    return WaveFunction{newquant}(g, FFTW.ifft(ψ));
 end
 """
     FFTW.fft(ψ::WaveFunction{Complex{Float64}})
@@ -258,7 +258,7 @@ Convert complex valued `WaveFunction` to `Vector` objects prior to calling
 
 Workaround for a dispatch bug in FFTW.
 """
-FFTW.fft(ψ::WaveFunction{Complex{Float64}}) = FFTW.fft(convert(Vector, ψ));
+FFTW.fft(ψ::WaveFunction) = FFTW.fft(convert(Vector{Complex{Float64}}, ustrip.(ψ)));
 """
     FFTW.ifft(ψ::WaveFunction{Complex{Float64}})
 
@@ -267,7 +267,7 @@ Convert complex valued `WaveFunction` to `Vector` objects prior to calling
 
 Workaround for a dispatch bug in FFTW.
 """
-FFTW.ifft(ψ::WaveFunction{Complex{Float64}}) = FFTW.ifft(convert(Vector, ψ));
+FFTW.ifft(ψ::WaveFunction) = FFTW.ifft(convert(Vector{Complex{Float64}}, ustrip.(ψ)));
 
 #Base.:*(Φ::WaveMatrix{T,S,G}, ψ::WaveFunction{K,1,S,G}) where {T,K,S,G} =
 #  WaveFunction{T,1,S,G}(Base.:*(Φ,convert(Vector,ψ)), ψ);

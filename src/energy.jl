@@ -106,7 +106,7 @@ function ke(ψ::WaveFunction{T,1,S,G}, H::SeparableHamiltonian) where
 end
 function ke(ψ::WaveFunction{T,1,S,G}, H::SeparableHamiltonian{Q}) where
             {T<:Unitful.Quantity,S<:ConfigurationSpace,G<:UniformGrid,Q<:Unitful.Quantity}
-  return ustrip(real(sum(conj(ψ) .* FFTW.ifft(ustrip(H.T) .* FFTW.fft(ustrip(ψ))))) * ψ.Δ) * unit(Q);
+  return ustrip(real(sum(conj(ψ) .* FFTW.ifft(ustrip(H.T) .* FFTW.fft(ψ)))) * ψ.Δ) * unit(Q);
 end
 
 """
