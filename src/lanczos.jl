@@ -25,7 +25,7 @@ end
 Construct `KryovBasis` object with space for `size` basis vectors on
 `grid`.
 """
-KrylovBasis{T}(grid::G, size::Int) where {T,S,G<:UniformGrid{S}} =
+KrylovBasis{T}(grid::G, size::Number) where {T,S,G<:UniformGrid{S}} =
   KrylovBasis{T,S,G}(zeros(T,length(grid),size), zeros(size),
                      zeros(size, size), grid.Δ);
 
@@ -82,7 +82,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   for i ∈ 1:size
     # Apply Hamiltonian to previous basis element.
     # ψ = H|ϕ[i]>
-    ψ[:] = ustrip.(H * Φ[:,i])*unit(ψ[1]);
+    ψ[:] = ustrip.(H * Φ[:,i])*unit(eltype(ψ));
 
     # α[i] = <ϕ[i]|H|ϕ[i]>
     α[i] = ip(Φ, i, ψ);
