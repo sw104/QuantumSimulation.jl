@@ -105,13 +105,14 @@ Construct `WaveFunction` from a compatible `WaveObject`.
 Works by dropping any empty dimensions until the `WaveObject` dimensions match
 those of the `Grid` it is defined upon.
 """
-function WaveFunction(ψ::WaveObject{T,N,S,M,G}) where {T,N,S,M,G}
+function WaveFunction{TN}(ψ::WaveObject{T,N,S,M,G}) where {TN,T,N,S,M,G}
   Δ = ψ.Δ;
   for i ∈ N:-1:M+1
-    ψ = dropdims(convert(Array, ψ), dims=i);
+    ψ = dropdims(convert(Array{TN}, ψ), dims=i);
   end
-  WaveFunction{T,M,S,G}(ψ, Δ);
+  WaveFunction{TN,M,S,G}(ψ, Δ);
 end
+WaveFunction(ψ::WaveObject{T}) where T = WaveFunction{T}(ψ);
 
 """
     getproperty(ψ::WaveFunction{S,1,T,G}, s::Symbol) where {S,N,T,G<:UniformGrid}
