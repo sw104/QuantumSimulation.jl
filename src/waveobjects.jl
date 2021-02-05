@@ -3,7 +3,7 @@
 # Structures to contain wave functions and collections of wave functions.
 #
 import FFTW
-export WaveObject, WaveFunction, WaveMatrix, WaveBasis, transform;
+export WaveObject, WaveFunction, WaveMatrix, WaveBasis, WaveBasisMatrix, transform;
 
 """
     WaveObject{S<:Space, N, M, T<:Number, G<:Grid{S,M}} <: AbstractArray{T,N}
@@ -158,6 +158,9 @@ struct WaveBasis{T,N,S,M,G<:Grid{S,M}} <: WaveObject{T,N,S,M,G}
   WaveBasis{T,2,S,1,G}(data::AbstractMatrix{T}, Δ::Number) where {T,S,G<:UniformGrid} =
     new(data, [Δ]);
 end
+
+"Alias for `WaveBasis` of 1D `WaveFunction` objects"
+WaveBasisMatrix{T,S,G} = WaveBasis{T,2,S,1,G}
 
 """
     WaveBasis{T}(grid::G, size::Int) where {T,S,M::Number,G<:Grid{S,M}}
