@@ -37,6 +37,65 @@ Compute adjoint of `Φ` and return the result as a new `KrylovBasis` object.
 Base.adjoint(Φ::KrylovBasis{T,S,G}) where {T,S,G} =
   KrylovBasis{T,S,G}(Base.adjoint(convert(Matrix,Φ)), Φ.λ, Φ.v, Φ.Δ);
 
+#=
+using SmoothingSplines
+function hermiteh(n::Number, x)
+  (n < 0) && throw(DomainError(n, "must be non-negative"))
+
+  H0 = one(x)
+  H1 = 2x
+
+  if n == 0
+      return H0
+  elseif n == 1
+      return H1
+  else
+      # Hm = H_m(x), Hm1 = H_{m-1}(x), Hm2 = H_{m-2}(x)
+      Hm, Hm1 = H1, H0
+
+      for m = 2:n
+          Hm1, Hm2 = Hm, Hm1
+          Hm = 2x*Hm1 - 2(m-1)Hm2
+      end
+
+      return Hm
+  end
+end
+
+function par_model(x, p)
+  res = zeros(eltype(x), length(x));
+  m = length(p);
+  for j ∈ 2:m res .+= p[j] * x.^(m-1); end
+  return res .* exp.(-(x.-p[1]).^2/2);
+end
+
+using LsqFit;
+function fit_wf(grid, y, n)
+  fit = Vector{LsqFit.LsqFitResult}(undef, n+1);
+  minresid = 0.0;
+  minresidid = 1;
+  for i ∈ 1:n
+    if i == 1 p0 = [0.0, 1.0];
+    elseif i == 2 p0 = [0.0, 0.0, 2.0];
+    elseif i == 3 p0 = [0.0, -2.0, 0.0, 4.0];
+    elseif i == 4 p0 = [0.0, 0.0, -12.0, 0.0, 8.0];
+    elseif i == 5 p0 = [0.0, 12.0, 0.0, -48.0, 0.0, 16.0];
+    elseif i == 6 p0 = [0.0, 0.0, 120.0, 0.0, -160.0, 0.0, 32.0];
+    elseif i == 7 p0 = [0.0, -120.0, 0.0, 720.0, 0.0, -480.0, 0.0, 64.0]; end
+    #p0 = zeros(eltype(y), i+1);
+    fit[i] = LsqFit.curve_fit(par_model, grid, y, p0)
+
+    resid = sum(abs.(fit[i].resid));
+    if (i == 1) minresid = resid;
+    elseif resid < minresid
+      minredid = resid;
+      minresidid = i;
+    end
+  end
+  println("Best model was with ", minresidid-1, " order polynomials");
+  return par_model(grid, fit[minresidid].param);
+end=#
+
 """
     KrylovBasis(grid::Uniform1DGrid, H::Hamiltonian, ψ::WaveFunction, size::Int;
                 debug::Bool = false)
@@ -63,6 +122,8 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
 
   # Initialise empty basis which we'll now populate.
   Φ = KrylovBasis{eltype(ψ)}(grid, size);
+  #Φi = KrylovBasis{eltype(ψ)}(grid, size);
+  #Φf = KrylovBasis{eltype(ψ)}(grid, size);
 
   # Hamiltonian representation matrix elements.
   α = zeros(Complex{Float64}, size);    # <ϕ[i]|H|ϕ[i]>
@@ -83,6 +144,30 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
 
   # Generate the basis vectors and Hamiltonian representation.
   for i ∈ 1:size
+    # Use splines to smooth function to reduce accumulating errors.
+    # #=
+    Φi[:,i] = Φ[:,i];
+    if i == 1 || i == 3
+      #=splre = predict(fit(SmoothingSpline, ustrip.(grid), real.(ustrip.(Φ[:,i])), 0.01));
+      splim = predict(fit(SmoothingSpline, ustrip.(grid), imag.(ustrip.(Φ[:,i])), 0.01));
+      Φ[:,i] = (splre + splim*im) * unit(eltype(ψ));
+      =#
+      #=
+      for j ∈ 1:length(Φ[:,i])
+        if (abs(Φ[j,i]) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = zero(eltype(Φ)); continue; end
+        if (abs(real(Φ[j,i])) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = imag(Φ[j,i])*im; end
+        if (abs(imag(Φ[j,i])) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = real(Φ[j,i]); end
+      end=#
+      realfit = fit_wf(ustrip.(grid), ustrip.(real.(Φ[:,i])), 2*i+1);
+      imagfit = fit_wf(ustrip.(grid), ustrip.(imag.(Φ[:,i])), 2*i+1);
+      Φ[:,i] = (realfit + imagfit*im) * unit(eltype(ψ));
+      #=
+      splre = predict(fit(SmoothingSpline, ustrip.(grid), real.(ustrip.(Φ[:,i])), 0.01));
+      splim = predict(fit(SmoothingSpline, ustrip.(grid), imag.(ustrip.(Φ[:,i])), 0.01));
+      Φ[:,i] = (splre + splim*im) * unit(eltype(ψ));=#
+      Φf[:,i] = Φ[:,i];
+    end=#
+
     # Apply Hamiltonian to previous basis element.
     # ψ = H|ϕ[i]>
     ψ[:] = ustrip.(H * Φ[:,i])*unit(eltype(ψ));
@@ -156,6 +241,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
   end
 
   return Φ;
+  #return (Φ, Φi, Φf);
 end
 
 "Simulation variations specific to the Lanczos method."
