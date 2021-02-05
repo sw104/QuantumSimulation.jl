@@ -44,7 +44,7 @@ Base.adjoint(Φ::KrylovBasis{T,S,G}) where {T,S,G} =
 Construct `KrylovBasis` and fill with basis vectors and appropriate
 eigenvalues/eigenvectors.
 """
-function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
+function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
                      size::Real; debug::Bool = false) where
           {T,S,G<:UniformGrid{S,1}}
   # Non-hermitian parameters: setting both to true prevents assumption of a
@@ -57,6 +57,9 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
   size = convert(Int,size);
 
   if debug println("Generating Krylov space basis..."); end
+
+  # Work on a copy of the passed wave function.
+  ψ = deepcopy(ψi);
 
   # Initialise empty basis which we'll now populate.
   Φ = KrylovBasis{eltype(ψ)}(grid, size);
@@ -128,9 +131,7 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψ::WaveFunction{T,1,S,G},
       end
     end
   end
-  # Reset ψ to its initial value.
-  ψ[:] = Φ[:,1];
-  
+
   # Print β values from both calculation methods for comparison.
   if (!calcβ && debug) println("β = ", β); println("β2 = ", β2); end
 
