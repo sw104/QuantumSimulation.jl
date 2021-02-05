@@ -2,6 +2,7 @@
 #
 # Implementation of short iterative Lanczos method.
 import LinearAlgebra: eigvals, eigvecs;
+using SmoothingSplines: SmoothingSpline, fit, predict;
 export KrylovBasis, ConvergenceVariation, propagate;
 
 "Krylov basis one one-dimensional `UniformGrid`."
@@ -38,7 +39,6 @@ Base.adjoint(Φ::KrylovBasis{T,S,G}) where {T,S,G} =
   KrylovBasis{T,S,G}(Base.adjoint(convert(Matrix,Φ)), Φ.λ, Φ.v, Φ.Δ);
 
 #=
-using SmoothingSplines
 function hermiteh(n::Number, x)
   (n < 0) && throw(DomainError(n, "must be non-negative"))
 
@@ -104,7 +104,8 @@ Construct `KrylovBasis` and fill with basis vectors and appropriate
 eigenvalues/eigenvectors.
 """
 function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
-                     size::Real; debug::Bool = false) where
+                     size::Real; debug::Bool = false, smooth::Bool=false,
+                     smoothno::Int=2, zerofilter::Bool=false) where
           {T,S,G<:UniformGrid{S,1}}
   # Non-hermitian parameters: setting both to true prevents assumption of a
   # hermitian Hamiltonian.
@@ -144,29 +145,24 @@ function KrylovBasis(grid::G, H::Hamiltonian, ψi::WaveFunction{T,1,S,G},
 
   # Generate the basis vectors and Hamiltonian representation.
   for i ∈ 1:size
-    # Use splines to smooth function to reduce accumulating errors.
-    # #=
-    Φi[:,i] = Φ[:,i];
-    if i == 1 || i == 3
-      #=splre = predict(fit(SmoothingSpline, ustrip.(grid), real.(ustrip.(Φ[:,i])), 0.01));
-      splim = predict(fit(SmoothingSpline, ustrip.(grid), imag.(ustrip.(Φ[:,i])), 0.01));
-      Φ[:,i] = (splre + splim*im) * unit(eltype(ψ));
-      =#
-      #=
+    if zerofilter && i%smoothno == 0
       for j ∈ 1:length(Φ[:,i])
-        if (abs(Φ[j,i]) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = zero(eltype(Φ)); continue; end
-        if (abs(real(Φ[j,i])) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = imag(Φ[j,i])*im; end
-        if (abs(imag(Φ[j,i])) < 1e-15 * unit(eltype(ψ))) Φ[j,i] = real(Φ[j,i]); end
-      end=#
-      realfit = fit_wf(ustrip.(grid), ustrip.(real.(Φ[:,i])), 2*i+1);
-      imagfit = fit_wf(ustrip.(grid), ustrip.(imag.(Φ[:,i])), 2*i+1);
-      Φ[:,i] = (realfit + imagfit*im) * unit(eltype(ψ));
-      #=
-      splre = predict(fit(SmoothingSpline, ustrip.(grid), real.(ustrip.(Φ[:,i])), 0.01));
-      splim = predict(fit(SmoothingSpline, ustrip.(grid), imag.(ustrip.(Φ[:,i])), 0.01));
-      Φ[:,i] = (splre + splim*im) * unit(eltype(ψ));=#
-      Φf[:,i] = Φ[:,i];
-    end=#
+        if (abs(Φ[j,i]) < 1e-14 * unit(eltype(ψ))) Φ[j,i] = zero(eltype(Φ)); continue; end
+        if (abs(real(Φ[j,i])) < 1e-14 * unit(eltype(ψ))) Φ[j,i] = imag(Φ[j,i])*im; end
+        if (abs(imag(Φ[j,i])) < 1e-14 * unit(eltype(ψ))) Φ[j,i] = real(Φ[j,i]); end
+      end
+    end
+    # Use splines to smooth function to reduce accumulating errors.
+    #Φi[:,i] = Φ[:,i];
+    if smooth && i%smoothno == 0
+      splre = predict(fit(SmoothingSpline, ustrip.(grid), real.(ustrip.(Φ[:,i])), 1e-3));
+      splim = predict(fit(SmoothingSpline, ustrip.(grid), imag.(ustrip.(Φ[:,i])), 1e-3));
+      Φ[:,i] = (splre + splim*im) * unit(eltype(ψ));
+      #realfit = fit_wf(ustrip.(grid), ustrip.(real.(Φ[:,i])), 2*i+1);
+      #imagfit = fit_wf(ustrip.(grid), ustrip.(imag.(Φ[:,i])), 2*i+1);
+      #Φ[:,i] = (realfit + imagfit*im) * unit(eltype(ψ));
+      #Φf[:,i] = Φ[:,i];
+    end
 
     # Apply Hamiltonian to previous basis element.
     # ψ = H|ϕ[i]>
