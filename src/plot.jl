@@ -236,6 +236,14 @@ function get_ranged_minmax(min::Int, max::Int, v::Vararg{AbstractVector})
 end
 
 """
+    subscript(i::Integer)
+
+Generate a string with a subscript number `i`. From Stack Overflow user
+improbable https://stackoverflow.com/a/46709534.
+"""
+subscript(i::Integer) = i<0 ? error("$i is negative") : join('₀'+d for d in reverse(digits(i)));
+
+"""
     generate_wavefunction_labels(num::Int)
 
 Generate labels to identify `num` wave functions.
@@ -244,7 +252,7 @@ function generate_wavefunction_labels(num::Int)
   labels = Vector{String}(undef, num);
   if (num == 1) labels[1] = "|ψ|²";
   else
-    for i ∈ 1:num labels[i] = string("|ψ", i, "|²"); end
+    for i ∈ 1:num labels[i] = string("|ψ", subscript(i), "|²"); end
   end
   return reshape(labels, 1, num);
 end
@@ -253,11 +261,13 @@ end
 @recipe function f(::Type{O}, x::Vector, y::Array) where
                    {T,N,S<:ConfigurationSpace,O<:WaveObject{T,N,S,1}}
   xguide --> "r";
+  yguide --> "Probability density";
   (x, y)
 end
 @recipe function f(::Type{O}, x::Vector, y::Array) where
                    {T,N,S<:MomentumSpace,O<:WaveObject{T,N,S,1}}
   xguide --> "k";
+  yguide --> "Probability density";
   (x, y)
 end
 
@@ -351,9 +361,9 @@ end
                    H::Union{SeparableHamiltonian,Nothing}=nothing) where {T,S,G}
   if opts.components
     #layout := @layout [ a{0.6w} grid(2,1) ]
-    size := (900, 450);
+    size := (800, 450);
     layout := @layout [ a{0.5w} b ]
-    dpi := 200;
+    dpi := 300;
 
     @series begin
       subplot := 2;
