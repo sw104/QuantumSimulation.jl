@@ -6,7 +6,7 @@ using RecipesBase;
 using Plots: @layout, grid;
 #using IJulia; # Required to prevent plotting window opening and crashing.
 
-export check_path, gen_filename, LanczosPlotOptions, SplitStepPlotOptions, SimPlot;
+export check_path, gen_filename, GeneralPlotOptions, LanczosPlotOptions, SplitStepPlotOptions, SimPlot;
 
 """
 Implementations contain mainly boolean objects specifying what should be
