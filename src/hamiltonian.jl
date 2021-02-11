@@ -261,8 +261,8 @@ end
 Shift the potential part of the Hamiltonian such that the minimum potential
 value is zero.
 """
-function set_min_zero(H::SeparableHamiltonian{S,T,M}) where {S,T,M}
+function set_min_zero(H::SeparableHamiltonian{S,T,TM,M}) where {S,T,TM,M}
   min = minimum(real.(H.V));
   V = H.V .- min;
-  return SeparableHamiltonian{S,T,M}(H .- LinearAlgebra.Diagonal(V), V, H.T);
+  return SeparableHamiltonian{S,T,TM,M}(H .- LinearAlgebra.Diagonal(V), V, H.T);
 end
