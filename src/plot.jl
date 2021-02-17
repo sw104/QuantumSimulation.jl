@@ -359,11 +359,12 @@ end
 "Plot real and imaginary parts of wave functions alongside main plot."
 @recipe function f(p::SimPlot, opts::PlotOptions, g::G, ψ::WaveFunction{T,1,S,G},
                    H::Union{SeparableHamiltonian,Nothing}=nothing) where {T,S,G}
+  size := (800, 450);
+  dpi := 300;
+
   if opts.components
     #layout := @layout [ a{0.6w} grid(2,1) ]
-    size := (800, 450);
     layout := @layout [ a{0.5w} b ]
-    dpi := 300;
 
     @series begin
       subplot := 2;
