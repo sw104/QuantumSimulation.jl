@@ -64,7 +64,7 @@ struct SimPlot<:PlotType end;
 Check the path given exists and create it if it does not.
 """
 function check_path(path::String)
-  if (!isdir(path))
+  if (!ispath(path))
     mkpath(path)
   end
 end
