@@ -4,7 +4,7 @@
 #
 using UnitfulAtomic;
 export gs_polarisation, radial_gaussian, radial_gaussian_harmonic_freq,
-       tweezer_potential_depth, simple_harmonic;
+       tweezer_potential_depth, simple_harmonic, translate_trajectory;
 
 """
     gs_polarisation(atom::String, λ::Number)
@@ -85,4 +85,89 @@ parameters given defined over the values contained in `x`.
 """
 function simple_harmonic(m::Number, ω::Number, x::AbstractVector{T}) where T<:Number
   return 0.5 * m * ω^2 * x.^2;
+end
+
+#=
+function translate_trajectory(r, b, Ua, ω₀a, Ub, ω₀b)
+  units = unit(r);
+  A = 2.0/ω₀a^2;
+  B = 2.0/ω₀b^2;
+  U = Ua;
+  V = Ub;
+  r = r;
+  b = b;
+  #=
+  a = (-(2^(1/3)*A*U_1)/(-27*A^4*b^3*B^2*U_1^2*U_2 + 81*A^4*b^2*B^2*U_1^2*U_2*x -
+                      81*A^4*b*B^2*U_1^2*U_2*x^2 - 27*A^4*b*B*U_1^2*U_2 + 27*A^4*
+                    B^2*U_1^2*U_2*x^3 + 27*A^4*B*U_1^2*U_2*x + sqrt(108*A^9*
+                    U_1^6 + (-27*A^4*b^3*B^2*U_1^2*U_2 + 81*A^4*b^2*B^2*U_1^2*
+                           U_2*x - 81*A^4*b*B^2*U_1^2*U_2*x^2 - 27*A^4*b*B*U_1^2*
+                         U_2 + 27*A^4*B^2*U_1^2*U_2*x^3 + 27*A^4*B*U_1^2*U_2*
+                       x)^2))^(1/3) + (-27*A^4*b^3*B^2*U_1^2*U_2 + 81*A^4*b^2*
+                                     B^2*U_1^2*U_2*x - 81*A^4*b*B^2*U_1^2*U_2*
+                                   x^2 - 27*A^4*b*B*U_1^2*U_2 + 27*A^4*B^2*U_1^2*
+                                 U_2*x^3 + 27*A^4*B*U_1^2*U_2*x + sqrt(108*A^9*
+                                                                     U_1^6 +
+                                                                   (-27*A^4*b^3*
+                                                                  B^2*U_1^2*U_2
+                                                                + 81*A^4*b^2*B^2*
+                                                              U_1^2*U_2*x - 81*
+                                                            A^4*b*B^2*U_1^2*U_2*
+                                                          x^2 - 27*A^4*b*B*U_1^2*
+                                                        U_2 + 27*A^4*B^2*U_1^2*
+                                                      U_2*x^3 + 27*A^4*B*U_1^2*
+                                                    U_2*x)^2))^(1/3)/(3*2^(1/3)*
+                                                                    A^2*U_1) +
+       x);
+    =#
+
+  #fac1 = 27A^4*b*B*U^2*V*exp(2B*(b - r)^2) - 27A^4*B*r*U^2*V*exp(2B*(b - r)^2);
+  prefac =  27A^4*U^2*V*B*exp(2B*(b - r)^2);
+  summand1 = prefac*(b - r);
+  #fac2 = sqrt((27A^4*b*B*U^2*V*exp(2B*(b - r)^2) - 27A^4*B*r*U^2*V*exp(2B*(b - r)^2))^2 - 108A^9*U^6*exp(6B*(b - r)^2));
+  sqrtcoef = summand1^2 - 108A^9*U^6*exp(6B*(b - r)^2);
+  #if true sqrtcoef = abs(sqrtcoef); end
+  sumq = summand1 + sqrt(complex(sqrtcoef));
+  
+  a = (2^(1/3)*A*U*exp(B*(b - r)^2))/sumq^(1/3) + (exp(-B*(b - r)^2)*sumq^(1/3))/(3*2^(1/3)*A^2*U) + r;
+
+
+  #fac1 = 27A^4*b*B*U^2*V*exp(B*(b - r)^2) - 27A^4*B*r*U^2*V*exp(B*(b - r)^2);
+  #fac2 = sqrt(108A^9*U^6 + (27A^4*B*r*U^2*V*exp(B*(b - r)^2) - 27A^4*b*B*U^2*V*exp(B*(b - r)^2))^2);
+
+  #a = -(2^(1/3)*A*U)/fac^(1/3) + fac^(1/3)/(3*2^(1/3)*A^2*U) + r;
+  println(Unitful.uconvert(unit(r),a));
+  return Unitful.uconvert(unit(r), real(a));
+end=#
+
+"""
+    translate_trajectory(r, b, Ua, ω₀a, Ub, ω₀b)
+
+Translate between the intended trajectory for the minimum of the radial
+component of two merging Gaussian potentials and the location of the potential.
+"""
+function translate_trajectory(r, b, Ua, ω₀a, Ub, ω₀b)
+  w = ω₀a;
+  y = ω₀b;
+  U = Ua;
+  V = Ub;
+
+  s1 = 108U^2*V*w^4*y^4*exp((4*(b - r)^2)/y^2);
+  f1 = s1*(b-r);
+  sqcoef = f1^2 - 864U^6*w^6*y^12*exp((12*(b - r)^2)/y^2);
+  sumterm = (f1 + sqrt(complex(sqcoef)))^(1/3);
+
+  a1 = (exp(-(2*(b - r)^2)/y^2) * sumterm)/(6*2^(1/3)*U*y^2);
+
+  a2 = (2^(1/3)*U*w^2*y^2*exp((2*(b - r)^2)/y^2)) / sumterm;
+
+  #println(Unitful.uconvert(unit(r),a1+a2));
+
+  a = r - (a1+a2);
+
+  #a = (e^(-(2 (b - r)^2)/y^2) (108 b U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) - 108 r U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) + sqrt((108 b U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) - 108 r U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2))^2 - 864 U^6 w^6 y^12 e^((12 (b - r)^2)/y^2)))^(1/3))/(6 2^(1/3) U y^2)
+  #+ (2^(1/3) U w^2 y^2 e^((2 (b - r)^2)/y^2))/(108 b U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) - 108 r U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) + sqrt((108 b U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2) - 108 r U^2 V w^4 y^4 e^((4 (b - r)^2)/y^2))^2 - 864 U^6 w^6 y^12 e^((12 (b - r)^2)/y^2)))^(1/3) + r and U y!=0 and w!=0
+
+  a = Unitful.uconvert(unit(r), a)
+  return real(a);
 end
