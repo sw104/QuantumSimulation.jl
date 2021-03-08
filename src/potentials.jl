@@ -116,6 +116,38 @@ function translate_trajectory(r, b, Ua, ω₀a, Ub, ω₀b)
   return real(a);
 end
 
+# Similar to the above using the Lambert W function instead of a cubic expansion
+# of the exponential.
+function translate_trajectory_lambert(r, b, Ua, ω₀a, Ub, ω₀b)
+  c = Ub/ω₀b^2 * (r-b) * exp(-2(r-b)^2/ω₀b^2);
+  arg = -2c^2 * ω₀a^2/Ua^2;
+  #println("Argument: ", arg);
+  argunit = unit(arg);
+  arg = ustrip(arg);
+  if (abs(arg) > 1.0/exp(1))
+    println("WARNING: outside of radius of convergence of series expansion!");
+    println("Argument was ", arg);
+  end
+  #lambert = arg - arg^2 + 3/2*arg^3 - 8/3*arg^4 + 125/24*arg^5;
+  #println(arg);
+  
+  lambert = 0.0;
+  for i ∈ 1:10
+    lambert += (-i)^(i-1)/factorial(i) * arg^i;
+  end
+  #L1 = log(-arg);
+  #L2 = log(-L1);
+  #lambert = L1 - L2;
+  #for i ∈ 0:5, j ∈ 1:6
+  #  lambert += (-1)^i * A * L1^(-i-j) * L2^j / factorial(j);
+  #end
+  #
+  #lambert = L1-L2 + L2/L1 + L2*(-2+L2)/(2L1^2) + L2*(6-9L2+2L2^2)/(6L1^3) + L2*(-12+36L2-22L2^2+3L2^3)/(12L1^4);
+  #lambert = lambertw(arg); # From LambertW package.
+  lambert *= argunit;
+  return r + ω₀a * sqrt(-0.5lambert);
+end
+
 """
     merge_radial_gaussian_harmonic_freq(m, a, Ua, ω₀a, b, Ub, ω₀b)
 
