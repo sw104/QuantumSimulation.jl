@@ -373,7 +373,7 @@ end
 
 "Plot potential functions included in the passed Hamiltonians."
 @recipe function f(grid::Grid1D, H::Vararg{SeparableHamiltonian})
-  potentials = Vector{Vector{Float64}}(undef, length(H));
+  potentials = Vector{Vector{real(eltype(H[1]))}}(undef, length(H));
   for i ∈ 1:length(H) potentials[i] = real.(H[i].V); end
   (grid, potentials)
 end
