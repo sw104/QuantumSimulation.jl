@@ -6,6 +6,7 @@ import Base: IndexStyle, size, getindex, setindex!, min, max, adjoint,
 import LinearAlgebra#: Diagonal, SymTridiagonal, norm;
 import Unitful#: Quantity, 𝐓;
 using Unitful: ustrip, unit;
+import UnitfulAtomicHarmonic;
 
 # Core datatypes and functions.
 include("spaces.jl");

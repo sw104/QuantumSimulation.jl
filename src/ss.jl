@@ -10,7 +10,10 @@ export propagate, find_groundstate;
     gen_opr(H::SeparableHamiltonian, par::SimParams)
 
 Generate kinetic and potential operators in momentum and configuration space
-(respectively) assuming that Strang splitting will be used.
+(respectively) assuming that Strang splitting will be used (with the half
+exponential factor on the potential term).
+
+Assumes ħ = 1 if values of type `Unitful.Quantity` are not passed.
 """
 function gen_opr(H::SeparableHamiltonian, par::SimParams)
   # Compensate for factor of -1 introduced by imaginary time propagation.
@@ -18,7 +21,20 @@ function gen_opr(H::SeparableHamiltonian, par::SimParams)
   else fac = 1;
   end
 
+  # This version assumes ħ = 1 and that you'll resolve the unit conversions
+  # yourself.
   return (exp.(ustrip.(-im*H.T*par.Δt*fac)), exp.(ustrip.(-0.5im*H.V*par.Δt*fac)));
+end
+function gen_opr(H::SeparableHamiltonian{T1}, par::SimParams{T2}) where
+                 {N1<:Number,T1<:Unitful.Quantity{N1,Unitful.𝐌*Unitful.𝐋^2/Unitful.𝐓^2},
+                  N2<:Number, T2<:Unitful.Quantity{N2,Unitful.𝐓}}
+  # Compensate for factor of -1 introduced by imaginary time propagation.
+  if (imag(par.Δt) != 0) fac=-1
+  else fac = 1;
+  end
+
+  return (exp.(-im*H.T*par.Δt*fac/UnitfulAtomicHarmonic.ħ_u),
+          exp.(-0.5im*H.V*par.Δt*fac/UnitfulAtomicHarmonic.ħ_u));
 end
 
 """
