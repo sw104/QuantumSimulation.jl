@@ -371,10 +371,11 @@ matrix across relevant range.
                                   abs2.(ϕ[min:max,:])))
 end
 
-"Plot potential function included in Hamiltonian."
-@recipe function f(grid::Grid1D, H::SeparableHamiltonian)
-  label --> "Potential"
-  (grid, real.(H.V))
+"Plot potential functions included in the passed Hamiltonians."
+@recipe function f(grid::Grid1D, H::Vararg{SeparableHamiltonian})
+  potentials = Vector{Vector{Float64}}(undef, length(H));
+  for i ∈ 1:length(H) potentials[i] = real.(H[i].V); end
+  (grid, potentials)
 end
 
 "Plot real and imaginary parts of wave functions alongside main plot."
