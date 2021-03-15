@@ -6,7 +6,8 @@ using RecipesBase;
 using Plots: @layout, grid;
 #using IJulia; # Required to prevent plotting window opening and crashing.
 
-export check_path, gen_filename, GeneralPlotOptions, LanczosPlotOptions, SplitStepPlotOptions, SimPlot;
+export check_path, gen_filename, format_plot_title_variable,
+       GeneralPlotOptions, LanczosPlotOptions, SplitStepPlotOptions, SimPlot;
 
 """
 Implementations contain mainly boolean objects specifying what should be
@@ -141,6 +142,26 @@ function gen_filename(p::SimParams, grid::UniformGrid{S,1},
   if (var[1] != nothing) name *= gen_filename(var...); end
 
   return name;
+end
+
+"""
+    format_plot_title_variable(variable::Number, decimalplaces::Integer)
+
+Format `variable` with a fixed number of decimal places given by `decimalplaces`
+such that it is in a suitable format to be printed in a GIF frame.
+"""
+function format_plot_title_variable(variable::Unitful.Quantity, decimalplaces::Integer)
+  return string(format_plot_title_variable(ustrip(variable), decimalplaces),
+                " ", unit(variable));
+end
+function format_plot_title_variable(variable::Number, decimalplaces::Integer)
+  # Determine number of digits before the decimal place.
+  predecimal = findfirst(".", string(variable));
+  if predecimal === nothing predecimal = length(string(variable));
+  else predecimal = predecimal[1]-1 end
+
+  return string(rpad(round(variable, digits=decimalplaces),
+                     predecimal+decimalplaces+1, '0'));
 end
 
 """
