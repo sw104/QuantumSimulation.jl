@@ -176,3 +176,34 @@ function merge_radial_gaussian_harmonic_freq(m, a, Ua, wa, b, Ub, wb)
   ω = 2.0*sqrt(complex(1/m*(Ub/wb^2*exp(-2(a-b)^2/wb^2)*(4(a-b)^2/wb^2 - 1) - Ua/wa^2)));
   return abs(ω);
 end
+
+function desired_trap_frequency2(γ, t, tfinal, ω0)
+  s = t/tfinal;
+  #println("s = ", s);
+  ρ = 1 + 10*(γ-1)*s^3 - 15*(γ-1)*s^4 + 6*(γ-1)*s^5;
+  #println("ρ = ", ρ);
+  ρdd = (60*(γ-1)*s - 180*(γ-1)*s^2 + 120*(γ-1)*s^3)/Unitful.uconvert(unit(ω0)^-1, tfinal)^2;
+  #println("ρdd = ", ρdd);
+  return (ω0^2/ρ^4 - ρdd/ρ);
+  #=
+  #println("ω = ", sqrt(complex(ω2)));
+  #Ub = (m*ω2/4 + Ua/wa^2) * wb^2/(exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1));
+  Ua = wa^2*(Ub/wb^2 * exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1) - m*ω2/4);
+  P = (Unitful.c0 * wa^2 * -Ua)/(4*ustrip(αa)*Unitful.uconvert(Unitful.u"m", 1Unitful.u"a0_au")^3);
+  return (sqrt(complex(ω2)), Ua, P);
+  
+  #return (Unitful.c0 * wb^2 * Ub)/(4*ustrip(αb)*Unitful.uconvert(Unitful.u"m", 1Unitful.u"a0_au")^3);
+  =#
+end
+
+function tweezer_power_from_potential(U, w, α)
+  return ((Unitful.c0 * w^2 * -U)/(4*ustrip(α)*Unitful.uconvert(Unitful.u"m", 1Unitful.u"a0_au")^3));
+end
+
+function Ua_from_ω2(ω2, m, Ub, wa, wb, a, b)
+  return (wa^2*(Ub/wb^2 * exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1) - m*ω2/4));
+end
+
+function Ub_from_ω2(ω2, m, Ua, wa, wb, a, b)
+  return ((m*ω2/4 + Ua/wa^2) * wb^2/(exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1)));
+end
