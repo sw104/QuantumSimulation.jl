@@ -118,23 +118,6 @@ Get the equivalent harmonic frequency of the trap in the radial direction given
 the locations of the merging Gaussian potentials.
 """
 function merge_radial_gaussian_harmonic_freq(m, a, Ua, wa, b, Ub, wb)
-
-  #ω1 = 2.0*sqrt(complex((Ua*a/wa^2 + Ub/wb^2*exp(-2(a-b)^2/wb^2)*(b+4(a-b)^3/wb^2))/m));
-
-  #ω1 = 2.0*sqrt(complex(-(Ua*wb^6*exp(2.0*(a^2 + b^2)/wb^2) - 16.0*Ub*a^4*wa^2*exp(4.0*a*b/wb^2) + 48.0*Ub*a^3*b*wa^2*exp(4.0*a*b/wb^2) - 48.0*Ub*a^2*b^2*wa^2*exp(4.0*a*b/wb^2) + 8.0*Ub*a^2*wa^2*wb^2*exp(4.0*a*b/wb^2) + 16.0*Ub*a*b^3*wa^2*exp(4.0*a*b/wb^2) - 4.0*Ub*a*b*wa^2*wb^2*exp(4.0*a*b/wb^2) - 4.0*Ub*b^2*wa^2*wb^2*exp(4.0*a*b/wb^2) + Ub*wa^2*wb^4*exp(4.0*a*b/wb^2))*exp(-2.0*(a^2 + b^2)/wb^2)/m))/(wa*wb^3);
-
-  #expofac  = exp(2.0*(a^2 + b^2)/wb^2);
-  #ω = 2.0*sqrt(complex(-(Ua*wb^4*expofac + Ub*wa^2*exp(4.0*a*b/wb^2)*(-4.0a^2 + 8.0*a*b -4.0*b^2 + wb^2))/(m*expofac)))/(wa*wb^2);
-
-  #ω1 = 2.0*sqrt(complex(1/m*(Ua/wa^2 - Ub/wb^2*exp(-2*(a-b)^2/wb^2)*(1-4(a-b)^2/wb^2))));
-  
-  # Full un-simplified expression is:
-  #ω = 2.0*sqrt(complex(-(Ua*wb^4*exp(2.0*(a^2 + b^2)/wb^2) - 4.0*Ub*a^2*wa^2*exp(4.0*a*b/wb^2) + 8.0*Ub*a*b*wa^2*exp(4.0*a*b/wb^2) - 4.0*Ub*b^2*wa^2*exp(4.0*a*b/wb^2) + Ub*wa^2*wb^2*exp(4.0*a*b/wb^2))*exp(-2.0*(a^2 + b^2)/wb^2)/m))/(wa*wb^2);
-  #println('\n');
-  #println("ω0 = ", ω);
-  #println("ω1 = ", ω1);
-  #println("ω2 = ", ω2);
-
   # Imaginary values for repulsive potential, real for attractive.
   ω = 2.0*sqrt(complex(1/m*(Ub/wb^2*exp(-2(a-b)^2/wb^2)*(4(a-b)^2/wb^2 - 1) - Ua/wa^2)));
   return abs(ω);
@@ -148,15 +131,6 @@ function desired_trap_frequency2(γ, t, tfinal, ω0)
   ρdd = (60*(γ-1)*s - 180*(γ-1)*s^2 + 120*(γ-1)*s^3)/Unitful.uconvert(unit(ω0)^-1, tfinal)^2;
   #println("ρdd = ", ρdd);
   return (ω0^2/ρ^4 - ρdd/ρ);
-  #=
-  #println("ω = ", sqrt(complex(ω2)));
-  #Ub = (m*ω2/4 + Ua/wa^2) * wb^2/(exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1));
-  Ua = wa^2*(Ub/wb^2 * exp(-2*(a-b)^2/wb^2)*((4*(a-b)^2)/wb^2 - 1) - m*ω2/4);
-  P = (Unitful.c0 * wa^2 * -Ua)/(4*ustrip(αa)*Unitful.uconvert(Unitful.u"m", 1Unitful.u"a0_au")^3);
-  return (sqrt(complex(ω2)), Ua, P);
-  
-  #return (Unitful.c0 * wb^2 * Ub)/(4*ustrip(αb)*Unitful.uconvert(Unitful.u"m", 1Unitful.u"a0_au")^3);
-  =#
 end
 
 function tweezer_power_from_potential(U, w, α)
