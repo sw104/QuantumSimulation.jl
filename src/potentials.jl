@@ -94,67 +94,21 @@ Translate between the intended trajectory for the minimum of the radial
 component of two merging Gaussian potentials and the location of the potential.
 """
 function translate_trajectory(r, b, Ua, ω₀a, Ub, ω₀b)
-  wa = ω₀a;
-  wb = ω₀b;
-
-  expo4b2r2 = exp(4*(b^2 + r^2)/wb^2);
-  expo2b2r2 = exp(2*(b^2 + r^2)/wb^2);
-
-  longsqrt = sqrt(3)*sqrt(complex(wa^6*(-2*Ua^2*wb^4*expo4b2r2 + 27*Ub^2*wa^2*(b^2 - 2*b*r + r^2)*exp(8*b*r/wb^2))/ (expo4b2r2*Ua^2*wb^4)));
-
-  postsqrt = -9*Ub*wa^4*(b - r)*exp(-2*(b^2 - 2*b*r + r^2)/wb^2)/(Ua*wb^2);
-
-  # We want the first imaginary root of the general solution case.
-  a = 3^(2/3)*(2^(2/3)*wa^2/3 + 3^(1/3)*(1 + sqrt(3)*im)* (12*r + 6^(1/3)*(1 + sqrt(3)*im)*(longsqrt + postsqrt)^(1/3))*(longsqrt + postsqrt)^(1/3)/36)/
-            (((Ua*longsqrt*wb^2*expo2b2r2 + 9*Ub*wa^4*(-b + r)*exp(4*b*r/wb^2))/(expo2b2r2*Ua*wb^2))^(1/3)*(1 + sqrt(3)*im));
-
-  # This is the full (unsimplified) expression.
-  #a = 3^(2/3)*(2^(2/3)*wa^2/3 + 3^(1/3)*(1 + sqrt(3)*im)*(12*r + 6^(1/3)*(1 + sqrt(3)*im)*(-54*r^3 + 9*r*wa^2 + 9*r*(6*r^2 - wa^2) + sqrt(3)*sqrt(complex((-2*Ua^2*wa^6*wb^4*exp(4*b^2/wb^2 + 4*r^2/wb^2) + 27*(-2*Ua*r^3*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wa^2*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wb^2*(2*r^2 - wa^2)*exp(2*b^2/wb^2 + 2*r^2/wb^2) - Ub*b*wa^4*exp(4*b*r/wb^2) + Ub*r*wa^4*exp(4*b*r/wb^2))^2)*exp(-4*b^2/wb^2 - 4*r^2/wb^2)/(Ua^2*wb^4))) - 9*Ub*b*wa^4*exp(-2*b^2/wb^2 + 4*b*r/wb^2 - 2*r^2/wb^2)/(Ua*wb^2) + 9*Ub*r*wa^4*exp(-2*b^2/wb^2 + 4*b*r/wb^2 - 2*r^2/wb^2)/(Ua*wb^2))^(1/3))*(-54*r^3 + 9*r*wa^2 + 9*r*(6*r^2 - wa^2) + sqrt(3)*sqrt(complex((-2*Ua^2*wa^6*wb^4*exp(4*b^2/wb^2 + 4*r^2/wb^2) + 27*(-2*Ua*r^3*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wa^2*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wb^2*(2*r^2 - wa^2)*exp(2*b^2/wb^2 + 2*r^2/wb^2) - Ub*b*wa^4*exp(4*b*r/wb^2) + Ub*r*wa^4*exp(4*b*r/wb^2))^2)*exp(-4*b^2/wb^2 - 4*r^2/wb^2)/(Ua^2*wb^4))) - 9*Ub*b*wa^4*exp(-2*b^2/wb^2 + 4*b*r/wb^2 - 2*r^2/wb^2)/(Ua*wb^2) + 9*Ub*r*wa^4*exp(-2*b^2/wb^2 + 4*b*r/wb^2 - 2*r^2/wb^2)/(Ua*wb^2))^(1/3)/36)/(((-18*Ua*r^3*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + 9*Ua*r*wa^2*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*wb^2*(-36*r^3 + 9*r*(6*r^2 - wa^2) + sqrt(3)*sqrt(complex((-2*Ua^2*wa^6*wb^4*exp(4*b^2/wb^2 + 4*r^2/wb^2) + 27*(-2*Ua*r^3*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wa^2*wb^2*exp(2*b^2/wb^2 + 2*r^2/wb^2) + Ua*r*wb^2*(2*r^2 - wa^2)*exp(2*b^2/wb^2 + 2*r^2/wb^2) - Ub*b*wa^4*exp(4*b*r/wb^2) + Ub*r*wa^4*exp(4*b*r/wb^2))^2)*exp(-4*b^2/wb^2 - 4*r^2/wb^2)/(Ua^2*wb^4))))*exp(2*b^2/wb^2 + 2*r^2/wb^2) - 9*Ub*b*wa^4*exp(4*b*r/wb^2) + 9*Ub*r*wa^4*exp(4*b*r/wb^2))*exp(-2*b^2/wb^2 - 2*r^2/wb^2)/(Ua*wb^2))^(1/3)*(1 + sqrt(3)*im)); 
-  a = Unitful.uconvert(unit(r), a)
-  #println(a);
-  # Has a small imaginary component which we'll ignore.
-  return real(a);
-end
-
-# Similar to the above using the Lambert W function instead of a cubic expansion
-# of the exponential.
-function translate_trajectory_lambert(r, b, Ua, ω₀a, Ub, ω₀b)
   c = Ub/ω₀b^2 * (r-b) * exp(-2(r-b)^2/ω₀b^2);
-  #arg = -2c^2 * ω₀a^2/Ua^2;
   arg = -(2c * ω₀a/Ua)^2;
   #println("Argument: ", arg);
-  #argunit = unit(arg);
-  #arg = ustrip(arg);
   if (abs(arg) > 1.0/exp(1))
     println("WARNING: outside of radius of convergence of series expansion!");
     println("Argument was ", arg);
   end
-  #lambert = arg - arg^2 + 3/2*arg^3 - 8/3*arg^4 + 125/24*arg^5;
   #println(arg);
-  #=
+
   lambert = 0.0;
-  for i ∈ 1:5
+  for i ∈ 1:10
     lambert += (-i)^(i-1)/factorial(i) * arg^i;
   end
-  =#
-  lamberthalf = 0.0;
-  for i ∈ 0:6
-    lamberthalf = 0.5*(i + 0.5)^(i -1)/factorial(i) * (-arg)^i;
-  end
-  lamberthalf *= sqrt(-arg);
-  #L1 = log(-arg);
-  #L2 = log(-L1);
-  #lambert = L1 - L2;
-  #for i ∈ 0:5, j ∈ 1:6
-  #  lambert += (-1)^i * A * L1^(-i-j) * L2^j / factorial(j);
-  #end
-  #
-  #lambert = L1-L2 + L2/L1 + L2*(-2+L2)/(2L1^2) + L2*(6-9L2+2L2^2)/(6L1^3) + L2*(-12+36L2-22L2^2+3L2^3)/(12L1^4);
-  #lambert = lambertw(arg); # From LambertW package.
-  #lambert *= argunit;
-  #return r + ω₀a * sqrt(-0.5lambert);
-  return r + 0.5ω₀a*lamberthalf;
-  #return r + 0.5ω₀a*sqrt(-lambert);
+  #println("Correction: ", 0.5ω₀a*sqrt(-lambert));
+  return r + 0.5ω₀a*sqrt(-lambert);
 end
 
 """
